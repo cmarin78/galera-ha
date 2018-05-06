@@ -1,0 +1,37 @@
+[all:vars]
+project="<your cloudstack env>"
+desc="<description>"
+network="<your env network>"
+networkOffering="NW-1000Mbps-VLAN"
+PortPublicDesde=<start public ports>
+PublicIP=<public IP> --#it can be an private IP for testing purposes
+GalStart=23000
+GalEnd=23002
+MaxStart=23003
+MaxEnd=23005
+
+[galera:vars]
+template="<your OS template>"
+serviceOffering="<your type machine>"
+firstIP=210
+dataDiskSizeGb=20
+
+
+[maxscale:vars]
+template="<your OS template>"
+serviceOffering="<your type machine>"
+firstIP=210
+
+
+[galera]
+galera01 ip=10.10.0.{{firstIP}}   sshPrivate=22 sshPublic={{PortPublicDesde}}
+galera02 ip=10.10.0.{{firstIP+1}} sshPrivate=22 sshPublic={{PortPublicDesde+1}}
+galera03 ip=10.10.0.{{firstIP+2}} sshPrivate=22 sshPublic={{PortPublicDesde+2}}
+
+[maxscale]
+maxscale01 ip=10.10.0.{{firstIP+3}} sshPrivate=22 sshPublic={{PortPublicDesde+3}}
+maxscale02 ip=10.10.0.{{firstIP+4}} sshPrivate=22 sshPublic={{PortPublicDesde+4}}
+maxscale03 ip=10.10.0.{{firstIP+5}} sshPrivate=22 sshPublic={{PortPublicDesde+5}}
+
+[maxscale-master]
+maxscale01 ip2=10.10.0.{{firstIP+10}} mysqlPrivate=3306 mysqlPublic={{PortPublicDesde+6}}

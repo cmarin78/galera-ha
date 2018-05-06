@@ -1,0 +1,104 @@
+---
+- name: Galera-Maxscale-Pacemaker-Cluster
+  hosts: localhost
+  connection: local
+  tasks:
+
+    - name: Firewall Services
+      local_action:
+        module: cs_firewall
+        type: ingress
+        cidr: <ip>
+        protocol: tcp
+        start_port: 23000
+        end_port: 23100
+        ip_address: "{{PublicIP}}"
+        project: "{{project}}"
+
+- name: Galera Cluster
+  hosts: galera
+  connection: local
+  tasks:
+
+    - name: Create Galera Nodes
+      local_action:
+        module: cs_instance
+        name: "{{inventory_hostname}}"
+        state: started
+        template: "{{template}}"
+        service_offering: "{{serviceOffering}}"
+        network: "{{network}}"
+        ip_address: "{{ip}}"
+        project: "{{project}}"
+
+    - name: Port forward SSH for Galera
+      local_action:
+        module: cs_portforward
+        ip_address: "{{PublicIP}}"
+        public_port: "{{sshPublic}}"
+        private_port: "{{sshPrivate}}"
+        vm: "{{inventory_hostname}}"
+        project: "{{project}}"
+
+
+- name: Maxscale Cluster
+  hosts: maxscale
+  connection: local
+  tasks:
+
+    - name: Create Maxscale Nodes.
+      local_action:
+        module: cs_instance
+        name: "{{inventory_hostname}}"
+        state: started
+        template: "{{template}}"
+        service_offering: "{{serviceOffering}}"
+        network: "{{network}}"
+        ip_address: "{{ip}}"
+        project: "{{project}}"
+
+    - name: Port forward SSH for Maxscale
+      local_action:
+        module: cs_portforward
+        ip_address: "{{PublicIP}}"
+        public_port: "{{sshPublic}}"
+        private_port: "{{sshPrivate}}"
+        vm: "{{inventory_hostname}}"
+        project: "{{project}}"
+
+- name: Galera Cluster Volumes
+  hosts: galera
+  connection: local
+  tasks:
+
+    - name: Attach data volume to Galera Instances.
+      local_action:
+        module: cs_volume
+        name: "{{inventory_hostname}}_GaleraData"
+        disk_offering: Custom Disk
+        size: "{{dataDiskSizeGb}}"
+        vm: "{{inventory_hostname}}"
+        state: attached
+        project: "{{project}}"
+
+- name: Maxscale Masster
+  hosts: maxscale-master
+  connection: local
+  tasks:
+
+    - name: Assign a Secondary IP to the default Maxscale Master Node.
+      local_action:
+        module: cs_instance_nic_secondaryip
+        vm: maxscale01
+        vm_guest_ip: "{{ip2}}"
+        project: "{{project}}"
+
+    - name: Port forward MySQL on Maxscale Master Node.
+      local_action:
+        module: cs_portforward
+        ip_address: "{{PublicIP}}"
+        public_port: "{{mysqlPublic}}"
+        private_port: "{{mysqlPrivate}}"
+        vm: maxscale01
+        vm_guest_ip: "{{ip2}}"
+        project: "{{project}}"
